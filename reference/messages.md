@@ -77,12 +77,20 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 > as, presumably, is any unknown parameter. Do not take `101` as evidence
 > that a parameter worked; verify the received email.
 >
-> **The working pattern for dynamic subjects** (confirmed by the product
-> owner): put a merge tag in the workflow template's **subject line** (e.g.
+> **The working pattern for dynamic subjects** (verified end-to-end 2026-07):
+> put a merge tag in the workflow template's **subject line** (e.g.
 > `{{subject}}`) and pass the value via `context` — merge tags resolve in the
-> subject just like in the body. A dedicated single-section "transactional
-> carrier" workflow with `{{subject}}` as its subject gives you a fully
-> dynamic subject per send.
+> subject just like in the body (UTF-8 incl. emoji arrives intact). A
+> dedicated single-section "transactional carrier" workflow with
+> `{{subject}}` as its subject gives you a fully dynamic subject per send.
+
+> **Gotcha — a `message_id` is not proof of sending** (verified 2026-07):
+> a send against a template with a **malformed merge tag** in the subject
+> line (`{{subject]]` — broken closing braces) returned `101` OK **with a
+> `message_id`**, but the email was never sent and the
+> [message action log](#message-action-log) for that ID stays empty forever.
+> After sending, verify a `send` action exists in the log — that, not the
+> `101` or the `message_id`, is the delivery evidence.
 
 > **Gotcha — a multi-section workflow sends ALL its messages at once**
 > (verified 2026-07): `autoresponder_id` must be the **workflow** ID — passing a
