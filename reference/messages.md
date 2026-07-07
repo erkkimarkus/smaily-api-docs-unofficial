@@ -35,7 +35,6 @@ workflow's filters and delays** — it sends immediately.
 | `to` | array | Yes | List of recipient email addresses. |
 | `from` | object | No | Sender: `{ "email": "...", "name": "..." }`. |
 | `reply_to` | object | No | Reply-To address object. |
-| `subject` | string | No | **Undocumented in the official docs** — overrides the template's subject line for this send (verified by the product owner; the API accepts it without error). |
 | `context` | object | No | Key-value variables for template personalization. **Shared across the whole `to` batch** — there is no per-recipient context; for individual personalization, make one call per recipient. |
 | `attachments` | array | No | Attachment objects: either `{ "content": <base64>, "filename": "..." }` **or** `{ "url": "https://...", "filename": "..." }` — one of `content`/`url` per attachment, not both. Max request body 64 MB. |
 
@@ -70,6 +69,15 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 > Attachment `content` must be **base64-encoded** (the example `dGVzdA==` decodes
 > to `test`). A `203` ("Invalid data submitted") usually means a malformed
 > recipient email or bad payload.
+
+> **Gotcha — no subject override, and unknown params fail silently**
+> (verified 2026-07): there is **no way to override the subject line** per
+> send — the subject always comes from the workflow template. A `subject`
+> parameter in the payload is **accepted (`101` OK) but silently ignored** —
+> as, presumably, is any unknown parameter. Do not take `101` as evidence
+> that a parameter worked; verify the received email. For dynamic subjects,
+> the candidate workaround is merge tags in the template's subject line fed
+> via `context` (untested — verify before relying on it).
 
 > **Gotcha — a multi-section workflow sends ALL its messages at once**
 > (verified 2026-07): `autoresponder_id` must be the **workflow** ID — passing a

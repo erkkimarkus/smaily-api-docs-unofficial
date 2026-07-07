@@ -229,10 +229,10 @@ are certain the first request never reached Smaily. (Contrast with
 > 7 messages to a single recipient (verified 2026-07).
 
 For transactional sending, build a dedicated **single-section** workflow.
-Related upsides that *are* underdocumented: the endpoint accepts an
-(officially undocumented) `subject` override, batches via the `to` array
-(context is shared across the batch, not per-recipient), and supports
-attachments (base64 or URL). See
+Related notes: there is **no per-send subject override** — a `subject` param
+is accepted but silently ignored (subject always comes from the template);
+batching works via the `to` array (context is shared across the batch, not
+per-recipient); attachments are supported (base64 or URL). See
 [Messages → Send message](../reference/messages.md#send-message).
 
 ---
