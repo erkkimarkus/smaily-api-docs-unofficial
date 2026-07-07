@@ -75,9 +75,14 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 > send — the subject always comes from the workflow template. A `subject`
 > parameter in the payload is **accepted (`101` OK) but silently ignored** —
 > as, presumably, is any unknown parameter. Do not take `101` as evidence
-> that a parameter worked; verify the received email. For dynamic subjects,
-> the candidate workaround is merge tags in the template's subject line fed
-> via `context` (untested — verify before relying on it).
+> that a parameter worked; verify the received email.
+>
+> **The working pattern for dynamic subjects** (confirmed by the product
+> owner): put a merge tag in the workflow template's **subject line** (e.g.
+> `{{subject}}`) and pass the value via `context` — merge tags resolve in the
+> subject just like in the body. A dedicated single-section "transactional
+> carrier" workflow with `{{subject}}` as its subject gives you a fully
+> dynamic subject per send.
 
 > **Gotcha — a multi-section workflow sends ALL its messages at once**
 > (verified 2026-07): `autoresponder_id` must be the **workflow** ID — passing a

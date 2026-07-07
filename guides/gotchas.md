@@ -230,7 +230,9 @@ are certain the first request never reached Smaily. (Contrast with
 
 For transactional sending, build a dedicated **single-section** workflow.
 Related notes: there is **no per-send subject override** — a `subject` param
-is accepted but silently ignored (subject always comes from the template);
+is accepted but silently ignored. Dynamic subjects DO work via a merge tag in
+the template's subject line (e.g. `{{subject}}`) fed through `context`
+(confirmed by the product owner);
 batching works via the `to` array (context is shared across the batch, not
 per-recipient); attachments are supported (base64 or URL). See
 [Messages → Send message](../reference/messages.md#send-message).
