@@ -35,8 +35,9 @@ workflow's filters and delays** — it sends immediately.
 | `to` | array | Yes | List of recipient email addresses. |
 | `from` | object | No | Sender: `{ "email": "...", "name": "..." }`. |
 | `reply_to` | object | No | Reply-To address object. |
-| `context` | object | No | Key-value variables for template personalization. |
-| `attachments` | array | No | Attachment objects: `{ "content": base64, "filename": "..." }`. |
+| `subject` | string | No | **Undocumented in the official docs** — overrides the template's subject line for this send (verified by the product owner; the API accepts it without error). |
+| `context` | object | No | Key-value variables for template personalization. **Shared across the whole `to` batch** — there is no per-recipient context; for individual personalization, make one call per recipient. |
+| `attachments` | array | No | Attachment objects: either `{ "content": <base64>, "filename": "..." }` **or** `{ "url": "https://...", "filename": "..." }` — one of `content`/`url` per attachment, not both. Max request body 64 MB. |
 
 ### Request
 
@@ -63,12 +64,19 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 |---|---|
 | `code` | Status code (`101` = OK). |
 | `message` | Human-readable status. |
-| `message_ids` | One ID per recipient — use to query the [message action log](#message-action-log). |
+| `message_ids` | One ID **per message sent** — with a multi-section workflow this is sections × recipients, not one per recipient (see gotcha below). Use to query the [message action log](#message-action-log). |
 
 > **Gotcha**
 > Attachment `content` must be **base64-encoded** (the example `dGVzdA==` decodes
 > to `test`). A `203` ("Invalid data submitted") usually means a malformed
 > recipient email or bad payload.
+
+> **Gotcha — a multi-section workflow sends ALL its messages at once**
+> (verified 2026-07): `autoresponder_id` must be the **workflow** ID — passing a
+> section/template ID fails with `221`. But one call against a 7-section
+> workflow returned **7 `message_ids` for a single recipient**: every section's
+> message was sent immediately. For transactional sending, point this endpoint
+> at a **single-section workflow** built for the purpose.
 
 ### Common codes
 

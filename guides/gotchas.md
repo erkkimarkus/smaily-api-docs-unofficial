@@ -220,6 +220,23 @@ are certain the first request never reached Smaily. (Contrast with
 
 ---
 
+## Send message: a multi-section workflow fires ALL its messages {#send-message-multi-section}
+
+> **Gotcha**
+> `POST message/send.php` takes a **workflow** ID (a section/template ID fails
+> with `221`) — and if that workflow has several sections, **every section's
+> message is sent immediately**: one call against a 7-section workflow produced
+> 7 messages to a single recipient (verified 2026-07).
+
+For transactional sending, build a dedicated **single-section** workflow.
+Related upsides that *are* underdocumented: the endpoint accepts an
+(officially undocumented) `subject` override, batches via the `to` array
+(context is shared across the batch, not per-recipient), and supports
+attachments (base64 or URL). See
+[Messages → Send message](../reference/messages.md#send-message).
+
+---
+
 ## Campaign launch has a 5-minute grace period
 
 > **Gotcha**
