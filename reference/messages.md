@@ -99,6 +99,23 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 > message was sent immediately. For transactional sending, point this endpoint
 > at a **single-section workflow** built for the purpose.
 
+> **Gotcha — context values are NOT HTML-escaped**
+> (live-verified 2026-07-23, smailydemo sandbox; probe script
+> `bin/walk-pro1537-escape-probe.cjs` in the `smaily-wordpress-plugin` repo):
+> merge-tag substitution inserts `context` values verbatim into the rendered
+> HTML. Callers MUST escape user-controlled values themselves (e.g.
+> `htmlspecialchars`) before sending, or risk content injection into the
+> email — Smaily adds no escaping of its own. Do not double-escape: a
+> pre-escaped value passed as `&lt;i&gt;...&lt;/i&gt;` displayed correctly as
+> literal text, confirming a single decode-on-render, not two.
+
+> **Gotcha — the subject line substitutes merge tags too**
+> (same live verification, 2026-07-23): the `{{subject}}`-in-template pattern
+> above (dynamic subject via `context.subject`) substitutes exactly like the
+> body — values pass through raw, with no stripping or escaping. Keep
+> user-controlled content out of a merge-tagged subject unless it has been
+> escaped/sanitized first.
+
 ### Common codes
 
 `101` OK · `203` validation error (e.g. invalid recipient email) · `221` invalid
