@@ -47,7 +47,7 @@ A successful write returns:
 | **224** | End date cannot be before start. | Swap/fix the date range. |
 | **225** | Database insert failed (internal server error). | Server-side. Safe to retry with backoff. |
 | **226** | Failed to download file from URL. | A referenced file/asset URL was unreachable. |
-| **227** | A paid package is required. | The feature needs a paid plan. |
+| **227** | A paid package is required. | The account's plan blocks API access entirely — see [HTTP 403 — plan block](#http-403--plan-block-code-227). Needs a plan change, not a request change. |
 
 > **Note**
 > Codes `204` and `206` are subscriber-scoped; `203`/`207` are generic
@@ -86,6 +86,46 @@ under 10/s rather than relying on `429` recovery — see the
 Bad or missing Basic-auth credentials, or the API user was deleted. Re-check the
 username/password and that the API user still exists. See
 [Authentication](authentication.md).
+
+> **Caveat**
+> You will never see a `401` from a plan-blocked (freemium) account — the
+> package check runs *before* authentication. See the next section.
+
+---
+
+## HTTP 403 — plan block (code 227)
+
+> **Verified** (2026-08-04, live against a freemium account)
+
+When an account's plan does not include API access (freemium), **every** API
+endpoint answers:
+
+```
+HTTP/1.1 403 Forbidden
+Content-Type: text/html   ← despite the JSON body
+
+{"code":227,"message":"A paid package is required."}
+```
+
+Observed behavior, all confirmed on the same account:
+
+- **The package check runs BEFORE authentication.** The response is identical
+  with correct credentials, a wrong password, a wrong username, and no
+  `Authorization` header at all. Consequence: **you cannot verify credentials
+  against a plan-blocked account** — a connection test can only report "the
+  plan blocks access; credentials could not be checked".
+- **Code 227 is a positive signal.** Nothing else produces it, so
+  `403` + body code `227` can safely be classified as *plan block* (an
+  account/billing problem), distinct from bad credentials (`401`) and from
+  outages (`5xx`). Retrying will not help; a human has to change the plan.
+- Endpoints confirmed: `autoresponder.php` (list), `contact.php` (read and
+  `list=1`), `history.php` — i.e. reads are blocked too, not only sends.
+- **No `WWW-Authenticate` and no `Retry-After` header** on these responses.
+- Note the HTTP status here is a real `403` — unlike validation errors, which
+  arrive as body codes on HTTP 200.
+
+Related edge: a **subdomain that does not exist** answers `404` with an empty
+body (no JSON at all) — distinguish it from the JSON-bodied errors above.
 
 ---
 

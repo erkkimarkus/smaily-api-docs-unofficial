@@ -55,6 +55,13 @@ Authorization: Basic base64("username:password")
 - **HTTPS is mandatory.** Plain HTTP requests are redirected and fail.
 - **Wrong credentials** → HTTP `401 Unauthorized` (transport-level; not one of
   the JSON `1xx`/`2xx` body codes in [errors.md](errors.md)).
+- **Plan-blocked (freemium) account** → HTTP `403` with body
+  `{"code":227,"message":"A paid package is required."}` on every endpoint,
+  and the check runs **before** authentication — identical response whether the
+  credentials are right, wrong, or absent, so credentials cannot be verified
+  against such an account. Verified live 2026-08-04; details in
+  [Errors → HTTP 403 — plan block](errors.md#http-403--plan-block-code-227).
+- **Nonexistent subdomain** → HTTP `404` with an empty body (no JSON).
 - A correctly authenticated request that fails validation still returns HTTP 200
   with a JSON error code in the body — see [Errors](errors.md).
 
