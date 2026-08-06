@@ -8,11 +8,18 @@ fire a workflow.
 |---|---|---|
 | [List automation workflows](#list-automation-workflows) | `GET` | `/api/autoresponder.php` |
 | [Trigger a workflow](#trigger-a-workflow) | `POST` | `/api/autoresponder.php` |
+| [List workflows (undocumented)](#list-workflows-undocumented) | `GET` | `/api/workflows.php` |
 
 > **Note**
 > The same `autoresponder.php` script handles both — `GET` lists workflows,
 > `POST` enrolls contacts. The `POST` form is also how you
 > [opt subscribers in](subscribers.md#opt-in-subscribers).
+
+> **Two views of the same thing**
+> `autoresponder.php` (documented) returns the workflow's *content* — sections,
+> subjects, templates. [`workflows.php`](#list-workflows-undocumented)
+> (undocumented, but it exists) returns the workflow's *identity* — id, title,
+> trigger type, enabled flag. Neither is a superset of the other.
 
 ---
 
@@ -82,6 +89,14 @@ Each `sections` entry contains `id`, `name` (the message subject), and `template
 > Use this to discover the `id` you need for [Trigger a workflow](#trigger-a-workflow)
 > and the `autoresponder_id` for [Send message](messages.md).
 
+> **Verified (2026-08-06, live accounts)** — `?id=N` is **silently ignored**.
+> `GET /api/autoresponder.php?id=123` returns the **full list**, exactly as if
+> no `id` had been passed — not a single workflow, and not an error. Unlike
+> [`campaign.php?id=N`](campaigns.md#campaign-statistics), there is no by-id
+> lookup here. Filter client-side, and never assume a one-element response:
+> code that does `response[0]` gets an arbitrary workflow, not the one you
+> asked for.
+
 ---
 
 ## Trigger a workflow
@@ -146,7 +161,7 @@ required field. See [Errors](../errors.md).
 > - **`221` also means "wrong trigger type"**: enrolling into an ACTIVE
 >   workflow whose trigger is *not* "form submitted" (e.g. an opt-in-triggered
 >   welcome series) returns `221 invalid autoresponder ID` even though the ID
->   plainly exists in the [list response](#list-workflows).
+>   plainly exists in the [list response](#list-automation-workflows).
 > - **You cannot pre-validate the trigger type**: the list response does not
 >   include the workflow's trigger, so the only reliable check is a test
 >   enroll against a test address.
@@ -157,4 +172,50 @@ required field. See [Errors](../errors.md).
 
 ---
 
-*Source: based on <https://smaily.com/help/api/automations-2/list-automation-workflows/> and <https://smaily.com/help/api/automations-2/autoresponder/>.*
+## List workflows (undocumented)
+
+```
+GET /api/workflows.php
+```
+
+> **Verified (2026-08-06, live accounts)** — this endpoint is **absent from the
+> official docs**, but it exists and answers with the account's workflows. It is
+> the only discovered way to resolve a workflow send back to a name.
+
+Returns a JSON array of workflow objects:
+
+| Field | Description |
+|---|---|
+| `id` | Numeric workflow identifier. |
+| `trigger_type` | The workflow's trigger — **not** exposed by [`autoresponder.php`](#list-automation-workflows). |
+| `title` | Workflow name. |
+| `is_enabled` | Whether the workflow is turned on. |
+
+Shape: `[{id, trigger_type, title, is_enabled}]`.
+
+### Why it matters: resolving a `campaign_id`
+
+> **Verified (2026-08-06, live accounts)**
+> Workflow ids come from the **same numeric sequence as campaign ids**, and they
+> are the values that workflow sends carry as `campaign_id` in
+> [action-log](action-log.md) rows.
+
+So an unknown `campaign_id` from `history.php` is resolved in two steps:
+
+1. `GET /api/campaign.php?id=N` — regular campaigns only. Unknown ids answer
+   HTTP 200 with `{"code":216,...}`.
+2. `GET /api/workflows.php` — match `id == N` for workflow sends.
+
+Some ids resolve in **neither** — A/B split-test campaigns are exposed by no
+discovered endpoint. See
+[Campaigns → what the list does not contain](campaigns.md#what-the-list-does-not-contain).
+
+> **Note**
+> `trigger_type` is the workflow's trigger as the API reports it. Whether its
+> values map cleanly onto the "form submitted" requirement of
+> [Trigger a workflow](#trigger-a-workflow) has **not** been verified — a test
+> enroll is still the only reliable check.
+
+---
+
+*Source: based on <https://smaily.com/help/api/automations-2/list-automation-workflows/> and <https://smaily.com/help/api/automations-2/autoresponder/>. `workflows.php` and the `?id=` behavior of `autoresponder.php` are not in the official docs — verified against live accounts, 2026-08-06.*
