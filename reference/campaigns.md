@@ -54,6 +54,25 @@ A JSON array of campaign objects:
 | `completed_at` | `null` unless `status` is `COMPLETED`. |
 | `status` | `DRAFT`, `PENDING`, `COMPLETED`, or `CANCELLED`. |
 
+### What the list does not contain
+
+> **Verified (2026-08-06, live accounts)**
+> `campaign.php` covers **regular campaigns only**. Two kinds of send are missing
+> from *both* the list (`limit=0`, no status filter) and the
+> [by-id lookup](#campaign-statistics), even though they draw their ids from the
+> **same numeric sequence** as regular campaigns:
+>
+> - **Workflow / autoresponder sends** — resolvable instead via
+>   [`workflows.php`](automations.md#list-workflows-undocumented).
+> - **A/B split-test campaigns** — no discovered endpoint exposes them at all.
+
+Practical consequence: a `campaign_id` you see in the
+[action log](action-log.md) is **not** guaranteed to be findable here. Treat
+`216 Could not find campaign matching provided ID` as "not a regular campaign",
+not as "does not exist", and fall through to `workflows.php` before giving up.
+A/B sends can still be *detected* — see
+[Action log → detecting an A/B send](action-log.md#detecting-an-ab-send).
+
 ---
 
 ## Launch a campaign
@@ -170,6 +189,18 @@ curl -X GET -u "${USERNAME}:${PASSWORD}" \
 > "Opens" here are **image/pixel opens** (`view_*`), distinct from `opened_*`.
 > Apple Mail Privacy Protection inflates these — weight clicks higher for real
 > engagement.
+
+> **Verified (2026-08-06, live accounts)** — an unknown `id` answers
+> **HTTP 200** with an error body:
+>
+> ```json
+> { "code": 216, "message": "Could not find campaign matching provided ID" }
+> ```
+>
+> Same shape for a syntactically fine id that simply isn't a regular campaign
+> (a workflow send, an A/B campaign — see
+> [what the list does not contain](#what-the-list-does-not-contain)). Branch on
+> the body `code`, not on the HTTP status.
 
 ### Common codes
 

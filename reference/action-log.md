@@ -51,7 +51,8 @@ A JSON array of action objects:
 | `seq_id` | Monotonic sequence number (present when querying with `since_seq_id`). **This is your cursor.** |
 | `email` | The subscriber the action belongs to. |
 | `time` | `YYYY-MM-DD HH:MM:SS` in **Europe/Tallinn** local time. |
-| `campaign_id` / `campaign_name` | The campaign that produced the action. |
+| `campaign_id` | The campaign that produced the action. Regular campaigns, workflow sends and A/B campaigns **share one id sequence** — see [Resolving `campaign_id`](#resolving-campaign_id). |
+| `campaign_name` | Its name, already resolved in the row. For A/B campaigns one id carries **two** names — see [Detecting an A/B send](#detecting-an-ab-send). |
 | `action` | One of the action types above. |
 | `value` | Context-dependent: SMTP code for `bounce`, clicked **URL** for `click`, device/OS/IP for `view`, etc. |
 
@@ -75,6 +76,40 @@ Example shape:
 > For `click` actions, `value` is the destination URL — including any UTM
 > parameters you embedded. This is how you attribute clicks back to specific
 > content (e.g. parse a `utm_content` recommendation ID out of the URL).
+
+---
+
+## Resolving `campaign_id`
+
+Every row carries both `campaign_id` and `campaign_name`, so the *name* is
+already in the log — you only need a lookup for the campaign's configuration or
+statistics. That lookup is not always possible:
+
+> **Verified (2026-08-06, live accounts)**
+> `campaign_id` values come from **one numeric sequence shared by regular
+> campaigns, workflow sends and A/B split-test campaigns** — but no single
+> endpoint lists all three:
+>
+> | Row produced by | Resolve with |
+> |---|---|
+> | Regular campaign | [`GET campaign.php?id=N`](campaigns.md#campaign-statistics) |
+> | Workflow / autoresponder send | [`GET workflows.php`](automations.md#list-workflows-undocumented), match on `id` |
+> | A/B split-test campaign | **nothing** — no discovered endpoint exposes them |
+
+`campaign.php?id=N` answers HTTP 200 with `{"code":216,...}` for anything it
+doesn't own, so `216` means "not a regular campaign", not "unknown id". See
+[Errors → code 216](../errors.md#code-216--not-a-regular-campaign).
+
+### Detecting an A/B send
+
+> **Verified (2026-08-06, live accounts)**
+> For an A/B split-test campaign the **same** `campaign_id` appears with **two
+> different `campaign_name` values**, split roughly 50/50 across its rows.
+
+Since A/B campaigns can't be looked up anywhere, this is the usable detector:
+group rows by `campaign_id` and count distinct `campaign_name` — more than one
+name means an A/B send, and the names are the variants. A regular campaign or a
+workflow send yields exactly one name per id.
 
 ---
 

@@ -37,7 +37,7 @@ A successful write returns:
 | **213** | Invalid win date provided (A/B test). | Fix the A/B-test win date. |
 | **214** | Invalid winning condition provided. | Use a supported A/B winning condition. |
 | **215** | Invalid campaign ID provided. | Check the campaign `id`. |
-| **216** | Could not find campaign matching provided ID. | The campaign doesn't exist. |
+| **216** | Could not find campaign matching provided ID. | The id is not a **regular** campaign — see [the 216 note](#code-216--not-a-regular-campaign) before concluding it doesn't exist. |
 | **217** | Unknown column in filter data. | A segment `filter_data` field name is wrong/unknown. |
 | **218** | Unknown operator for field (unsupported segmentation). | Use a [supported operator](reference/segments.md#filter-operators). |
 | **219** | Could not find list with ID (segment doesn't exist). | Same class as 208 — verify the `id`. |
@@ -63,6 +63,29 @@ A successful write returns:
   (e.g. looking up a contact that doesn't exist yet).
 - `209`, `225`, `226` → **transient / server-side**. Retry with backoff.
 - `211`, `227` → **account/config**. Needs a human (verify domain / upgrade plan).
+
+---
+
+## Code 216 — "not a regular campaign"
+
+> **Verified** (2026-08-06, live against two accounts)
+
+```
+GET /api/campaign.php?id={unknown}
+
+HTTP/1.1 200 OK
+{"code":216,"message":"Could not find campaign matching provided ID"}
+```
+
+- The status is a plain **HTTP 200** — the failure lives in the body `code`
+  only, like most Smaily errors.
+- `216` does **not** prove the id is unused. `campaign.php` only knows *regular*
+  campaigns; workflow/autoresponder sends and A/B split-test campaigns share the
+  same numeric id sequence but are absent from it. See
+  [Campaigns → what the list does not contain](reference/campaigns.md#what-the-list-does-not-contain).
+- On `216`, fall through to
+  [`workflows.php`](reference/automations.md#list-workflows-undocumented) before
+  treating the id as unknown.
 
 ---
 
