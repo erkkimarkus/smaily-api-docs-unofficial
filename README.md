@@ -4,7 +4,7 @@
 > developer-written re-write of the
 > [official Smaily help pages](https://smaily.com/help/api/), reorganized for
 > building integrations and corrected against **observed production behavior**
-> (last verified **2026-07**; see [Gotchas](guides/gotchas.md)). Where this set
+> (last verified **2026-08**; see [Gotchas](guides/gotchas.md)). Where this set
 > says **"In practice"** or **"Verified"**, it reflects behavior that differs
 > from — or is missing from — the official docs. Behavior can change without
 > notice; when something here disagrees with what you observe, trust your
@@ -60,9 +60,10 @@ All requests must use HTTPS. Plain HTTP is redirected and the request fails.
 - [Errors & response codes](errors.md) — full code table and how to handle each.
 
 ### Reference
+- [Endpoint index](reference/endpoints.md) — every `.php` script that exists, and the plausible names that don't.
 - [Subscribers](reference/subscribers.md) — create/update (single + batch), get, list by segment, opt-in, forget, custom fields, action log.
 - [Segments](reference/segments.md) — list, create/update, list subscribers of a segment, segment rules.
-- [Automations](reference/automations.md) — list workflows, trigger a workflow (autoresponder).
+- [Automations](reference/automations.md) — list workflows (`autoresponder.php` and the undocumented `workflows.php`), trigger a workflow.
 - [Messages](reference/messages.md) — transactional `send`, message action log.
 - [Campaigns](reference/campaigns.md) — list, launch, statistics, unsubscribe a recipient.
 - [Action log](reference/action-log.md) — the pull-based engagement event stream.
