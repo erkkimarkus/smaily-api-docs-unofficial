@@ -204,6 +204,11 @@ address** before going live. Also validate `status == "ACTIVE"` yourself — a
 `101` alone does not mean an email went out. See
 [Automations → Trigger a workflow](../reference/automations.md#trigger-a-workflow).
 
+The undocumented [`workflows.php`](../reference/automations.md#list-workflows-undocumented)
+*does* return a `trigger_type` per workflow (verified 2026-08-06), so it can
+narrow the field — but whether its values map exactly onto the "form submitted"
+requirement has not been verified. Test enroll first regardless.
+
 ---
 
 ## Enroll is not idempotent
@@ -248,6 +253,42 @@ per-recipient); attachments are supported (base64 or URL). See
 Set `due` explicitly for precise timing. Also note: `html` must be a **publicly
 reachable URL** or launch fails with `209`. See
 [Campaigns → launch](../reference/campaigns.md#launch-a-campaign).
+
+---
+
+## `campaign.php` doesn't know every `campaign_id` {#campaign-id-coverage-gap}
+
+> **Gotcha**
+> Regular campaigns, workflow sends and A/B split-test campaigns all draw
+> `campaign_id` from **one numeric sequence** — but `campaign.php` lists only the
+> **regular** ones (verified 2026-08-06). The other two are absent from both the
+> list (`limit=0`) and the by-id lookup.
+
+So an id straight out of the [action log](../reference/action-log.md) can answer
+`{"code":216,"message":"Could not find campaign matching provided ID"}` (on
+HTTP 200) while being perfectly real. Read `216` as **"not a regular
+campaign"**, then fall through:
+
+- workflow sends → [`workflows.php`](../reference/automations.md#list-workflows-undocumented);
+- A/B campaigns → nowhere; no discovered endpoint exposes them. Detect them
+  instead — the same `campaign_id` carries **two different `campaign_name`
+  values** in a ~50/50 split across its action-log rows. See
+  [Action log → detecting an A/B send](../reference/action-log.md#detecting-an-ab-send).
+
+---
+
+## `autoresponder.php?id=N` ignores the filter {#autoresponder-id-ignored}
+
+> **Gotcha**
+> `GET /api/autoresponder.php?id=123` returns the **whole workflow list**, not
+> workflow 123 — the parameter is silently ignored, and no error is raised
+> (verified 2026-08-06).
+
+There is no by-id lookup for automations; filter client-side on `id`. Code that
+trusts the parameter and reads `response[0]` picks an arbitrary workflow. The
+`?id=` convention that works on `campaign.php` does **not** generalise across
+scripts. See
+[Automations → list](../reference/automations.md#list-automation-workflows).
 
 ---
 
