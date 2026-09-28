@@ -24,11 +24,11 @@ GET /api/history.php
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
-| `since_seq_id` | one of these | — | Return only actions **after** this sequence number (the cursor). |
+| `since_seq_id` | one of these | — | Return only actions **after** this sequence number (the cursor). Requires `limit`. |
 | `start_at` / `end_at` | one of these | — | Time window as **UNIX timestamps in UTC**. Mutually exclusive with `since_seq_id`. |
-| `offset` | No | `0` | Page index. **Incompatible with `since_seq_id`** (use it only with date windows). |
-| `limit` | No | `10000` | Max results per request. **Capped at 10,000.** |
-| `actions` | No | all | Filter to specific action types (see below). |
+| `offset` | No | `0` | Page **number**, not a row offset: page `0` is actions 1–10 000, page `1` is 10 001–20 000, **whatever `limit` says**. **Incompatible with `since_seq_id`** (use it only with date windows). |
+| `limit` | No (**yes** with `since_seq_id`) | — | Max results per request. **Capped at 10,000.** |
+| `actions` | No | all | Filter to specific action types, **comma-separated** (`actions=click,view`; see below). |
 
 ### Action types
 
@@ -48,7 +48,7 @@ A JSON array of action objects:
 
 | Field | Description |
 |---|---|
-| `seq_id` | Monotonic sequence number (present when querying with `since_seq_id`). **This is your cursor.** |
+| `seq_id` | Monotonic sequence number. **Only returned when querying with `since_seq_id`** — a `start_at`/`end_at` answer carries none (see [Date windows](#date-windows)). **This is your cursor.** |
 | `email` | The subscriber the action belongs to. |
 | `time` | `YYYY-MM-DD HH:MM:SS` in **Europe/Tallinn** local time. |
 | `campaign_id` | The campaign that produced the action. Regular campaigns, workflow sends and A/B campaigns **share one id sequence** — see [Resolving `campaign_id`](#resolving-campaign_id). |
@@ -128,17 +128,53 @@ ask only for newer events.
 ```bash
 # First page
 curl -X GET -u "${USERNAME}:${PASSWORD}" \
-  "https://${SUBDOMAIN}.sendsmaily.net/api/history.php?since_seq_id=0&limit=10000&actions[]=click&actions[]=view"
+  "https://${SUBDOMAIN}.sendsmaily.net/api/history.php?since_seq_id=0&limit=10000&actions=click,view"
 
 # Next page — feed the highest seq_id you saw back in
 curl -X GET -u "${USERNAME}:${PASSWORD}" \
-  "https://${SUBDOMAIN}.sendsmaily.net/api/history.php?since_seq_id=90412&limit=10000&actions[]=click&actions[]=view"
+  "https://${SUBDOMAIN}.sendsmaily.net/api/history.php?since_seq_id=90412&limit=10000&actions=click,view"
 ```
 
 > **Why `since_seq_id` and not dates?**
 > The sequence cursor is gap-free and resumable; date windows can double-count or
 > miss events around boundaries and don't survive clock skew. Use date windows
 > only for one-off backfills within the 30-day retention.
+
+## Date windows
+
+`start_at` + `end_at` and `since_seq_id` are **two different queries, never one**:
+a request states one or the other, and the answer differs between them.
+
+> **Verified (2026-09-28, live account)**
+> `history.php?start_at=…&end_at=…&actions=modify&limit=3` answered three rows
+> and **none of them carried `seq_id`**. The comma-separated `actions` filter was
+> honoured.
+
+| | `since_seq_id` | `start_at` + `end_at` |
+|---|---|---|
+| Rows carry `seq_id` | yes | **no** |
+| Ordered by | `seq_id` | `time` |
+| `limit` | required | optional |
+| `offset` | not allowed | page number (10 000 rows a page) |
+
+What follows from that:
+
+- **A window gives you no cursor.** Nothing in a window's answer can be fed to
+  `since_seq_id`, so a poller that starts from a date has to go on reading
+  windows, or start its cursor some other way (`since_seq_id=0` walks the whole
+  30 days from the oldest).
+- **Next window from the last one's end.** Rows are timed to the second in
+  **Europe/Tallinn local time**, while `start_at`/`end_at` are **UTC** Unix
+  seconds, and several rows can share one second.
+- **`end_at` inclusivity is not documented.** Choose a boundary rule that cannot
+  skip a row (for example, the next window starts at the previous `end_at + 1`
+  with the previous `end_at` in the past), and say which rule you rely on.
+- **Paging with `offset` is by 10 000-row pages.** A smaller `limit` with
+  `offset=1` skips everything between `limit` and row 10 001, so page a window
+  with `limit=10000` or not at all.
+
+The per-message log behaves differently: there `seq_id` is returned on every row
+(see [Messages → Message action log](messages.md#message-action-log)).
 
 ### Recommended polling cadence
 

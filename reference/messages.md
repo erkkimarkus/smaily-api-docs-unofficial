@@ -144,7 +144,7 @@ complaints. Retention is the **last 30 days**.
 |---|---|---|---|
 | One of `since_seq_id`, `message_id`, or `start_at`/`end_at` | Yes | — | Selects the window. |
 | `limit` | No | `10000` | Max records (capped at 10,000). |
-| `offset` | No | `0` | Page index. **Cannot be combined with `since_seq_id`.** |
+| `offset` | No | `0` | Page **number** (page `0` is records 1–10 000, page `1` is 10 001–20 000). **Cannot be combined with `since_seq_id`.** |
 
 ### Request
 
@@ -159,7 +159,7 @@ A JSON array of action objects:
 
 | Field | Description |
 |---|---|
-| `seq_id` | Sequence number — use as the cursor for incremental sync. |
+| `seq_id` | Sequence number — use as the cursor for incremental sync. Returned on **every** row, a date-window answer included — unlike the [subscriber action log](action-log.md#date-windows). Rows are ordered by `seq_id`, or by date under `start_at`/`end_at`. |
 | `message_id` | The message this action belongs to. |
 | `email` | Recipient. |
 | `campaign_id` | Associated campaign/workflow, if any. |
