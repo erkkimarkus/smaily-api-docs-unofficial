@@ -35,7 +35,7 @@ workflow's filters and delays** — it sends immediately.
 | `to` | array | Yes | List of recipient email addresses. |
 | `from` | object | No | Sender: `{ "email": "...", "name": "..." }`. |
 | `reply_to` | object | No | Reply-To address object. |
-| `context` | object | No | Key-value variables for template personalization. **Shared across the whole `to` batch** — there is no per-recipient context; for individual personalization, make one call per recipient. |
+| `context` | object | No | Key-value variables for template personalization. **Shared across the whole `to` batch** — there is no per-recipient context; for individual personalization, make one call per recipient. **In practice there is no limit** on the number of keys or the size of `context` (verified by the product owner). |
 | `attachments` | array | No | Attachment objects: either `{ "content": <base64>, "filename": "..." }` **or** `{ "url": "https://...", "filename": "..." }` — one of `content`/`url` per attachment, not both. Max request body 64 MB. |
 
 ### Request
@@ -174,4 +174,4 @@ A JSON array of action objects:
 
 ---
 
-*Source: based on <https://smaily.com/help/api/messages/send-message/> and <https://smaily.com/help/api/messages/message-action-log/>. Unlimited-sending characteristic verified by the product owner.*
+*Source: based on <https://smaily.com/help/api/messages/send-message/> and <https://smaily.com/help/api/messages/message-action-log/>. Unlimited-sending characteristic and the absence of a `context` key-count or size limit verified by the product owner.*

@@ -126,7 +126,7 @@ the workflow's templates can use it. The targeted workflow must use a
 | `email` | Yes | Subscriber's email. |
 | `is_unsubscribed` | No | `0` / `1`. |
 | `is_deleted` | No | `0` / `1`. |
-| *(any other key)* | No | Custom field, auto-created. Available in the workflow's templates. |
+| *(any other key)* | No | Custom field, auto-created — effectively unlimited, see [Custom fields](subscribers.md#custom-fields). Available in the workflow's templates. |
 
 ### Request
 
