@@ -38,6 +38,9 @@ workflow's filters and delays** — it sends immediately.
 | `context` | object | No | Key-value variables for template personalization. **Shared across the whole `to` batch** — there is no per-recipient context; for individual personalization, make one call per recipient. **In practice there is no limit** on the number of keys or the size of `context` (verified by the product owner). |
 | `attachments` | array | No | Attachment objects: either `{ "content": <base64>, "filename": "..." }` **or** `{ "url": "https://...", "filename": "..." }` — one of `content`/`url` per attachment, not both. Max request body 64 MB. |
 
+There is **no `cc` or `bcc` parameter** — the six above are the whole
+parameter list (see [No CC or BCC](#no-cc-or-bcc) below).
+
 ### Request
 
 ```bash
@@ -83,6 +86,26 @@ curl -X POST -u "${USERNAME}:${PASSWORD}" \
 > subject just like in the body (UTF-8 incl. emoji arrives intact). A
 > dedicated single-section "transactional carrier" workflow with
 > `{{subject}}` as its subject gives you a fully dynamic subject per send.
+
+<a id="no-cc-or-bcc"></a>
+
+> **Gotcha — no CC or BCC**
+> (official parameter list read 2026-10-12): `message/send.php` has no `cc`
+> or `bcc` parameter, and no other way to put an address in a `Cc` or `Bcc`
+> header. Smaily's parameter list is `autoresponder_id`, `from`, `reply_to`,
+> `to`, `context` and `attachments`. A `cc` or `bcc` key is not documented;
+> by the unknown-parameter behaviour above, expect it to be answered `101`
+> and ignored (not live-verified). Do not take `101` as proof that a copy
+> went out.
+>
+> **To send a copy** (for example the shop's own copy of an order email),
+> add the second address to `to`: `"to": ["customer@domain.tld",
+> "shop@domain.tld"]`. Every address in `to` gets the same template rendered
+> with the same `context`, and each recipient's message gets its own
+> `message_id` (see the `message_ids` field above) and its own rows in the
+> [message action log](#message-action-log). The copy is one more message
+> sent, not a `Cc` header. To send the copy from another template, make a
+> second call with the other `autoresponder_id`.
 
 > **Gotcha — a `message_id` is not proof of sending** (verified 2026-07):
 > a send against a template with a **malformed merge tag** in the subject
@@ -174,4 +197,4 @@ A JSON array of action objects:
 
 ---
 
-*Source: based on <https://smaily.com/help/api/messages/send-message/> and <https://smaily.com/help/api/messages/message-action-log/>. Unlimited-sending characteristic and the absence of a `context` key-count or size limit verified by the product owner.*
+*Source: based on <https://smaily.com/help/api/messages/send-message/> and <https://smaily.com/help/api/messages/message-action-log/>. Unlimited-sending characteristic and the absence of a `context` key-count or size limit verified by the product owner. The absence of `cc`/`bcc` is from the official parameter list as published on 2026-10-12.*

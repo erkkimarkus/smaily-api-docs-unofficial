@@ -239,7 +239,8 @@ is accepted but silently ignored. Dynamic subjects DO work via a merge tag in
 the template's subject line (e.g. `{{subject}}`) fed through `context`
 (confirmed by the product owner);
 batching works via the `to` array (context is shared across the batch, not
-per-recipient); attachments are supported (base64 or URL). See
+per-recipient); attachments are supported (base64 or URL); there is no
+`cc` or `bcc` — a copy goes out as one more address in `to`. See
 [Messages → Send message](../reference/messages.md#send-message).
 
 ---
